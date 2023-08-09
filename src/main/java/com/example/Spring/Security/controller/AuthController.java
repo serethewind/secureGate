@@ -6,6 +6,7 @@ import com.example.Spring.Security.entity.RoleEntity;
 import com.example.Spring.Security.entity.UserEntity;
 import com.example.Spring.Security.repository.RoleRepository;
 import com.example.Spring.Security.repository.UserRepository;
+import com.example.Spring.Security.service.AuthService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,40 +27,15 @@ import java.util.Collections;
 @RequestMapping("api/v1/auth")
 @AllArgsConstructor
 public class AuthController {
-
-    private AuthenticationManager authenticationManager;
-    private RoleRepository roleRepository;
-    private UserRepository userRepository;
-    private PasswordEncoder passwordEncoder;
+    private AuthService authService;
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterDto registerDto){
-
-        if (userRepository.existsByUsernameOrEmail(registerDto.getUsername(), registerDto.getEmail())){
-            return new ResponseEntity<>("Username or Email is already taken", HttpStatus.BAD_REQUEST);
-        }
-
-        RoleEntity role = roleRepository.findByRolename("ROLE_USER").orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-
-        UserEntity user = UserEntity.builder()
-                .firstName(registerDto.getFirstName())
-                .lastName(registerDto.getLastName())
-                .otherName(registerDto.getOtherName())
-                .username(registerDto.getUsername())
-                .email(registerDto.getEmail())
-                .password(passwordEncoder.encode(registerDto.getPassword()))
-                .roles(Collections.singleton(role))
-                .build();
-
-        userRepository.save(user);
-
-        return new ResponseEntity<>("User registered successfully", HttpStatus.CREATED);
+        return new ResponseEntity<>(authService.register(registerDto), HttpStatus.CREATED);
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginDto loginDto){
-        Authentication authentication =  authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginDto.getUsername(), loginDto.getPassword()));
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        return new ResponseEntity<>("User logged in successfully", HttpStatus.OK);
+        return new ResponseEntity<>(authService.login(loginDto), HttpStatus.OK);
     }
 }
